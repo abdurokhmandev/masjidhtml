@@ -7,45 +7,49 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+6WvZ6V6byMZu+f1eeS0Cml5Zt7N1riRWN6K86v8M=" crossorigin=""/>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <main class="container">
-        <header class="hero">
-            <h1>🕋 Qibla Yo'nalishi</h1>
-            <p>Joriy joylashuvingizga asoslanib, Ka'ba tomon yo'nalishni aniqlang.</p>
-        </header>
+    <div class="wrapper">
+        <main class="container">
+            <header class="hero">
+                <h1>🕋 Qibla Yo'nalishi</h1>
+                <p>Joriy joylashuvingizga asoslanib, Ka'ba tomon yo'nalishni aniqlang.</p>
+            </header>
 
-        <section class="card display-section">
-            <div class="compass-wrapper">
-                <div class="compass">
-                    <div class="compass-dial">
-                        <span class="direction n">N</span>
-                        <span class="direction e">E</span>
-                        <span class="direction s">S</span>
-                        <span class="direction w">W</span>
+            <section class="card display-section">
+                <div class="compass-wrapper">
+                    <div class="compass">
+                        <div class="compass-dial">
+                            <span class="direction n">N</span>
+                            <span class="direction e">E</span>
+                            <span class="direction s">S</span>
+                            <span class="direction w">W</span>
+                        </div>
+                        <div class="arrow" id="arrow"></div>
                     </div>
-                    <div class="arrow" id="arrow"></div>
                 </div>
-            </div>
-            
-            <div class="info-panel">
-                <p id="status" class="status">Joylashuvingizni aniqlash uchun quyidagi tugmani bosing.</p>
-                <button id="locateBtn" class="btn-primary">Joylashuvni aniqlash</button>
-            </div>
-        </section>
+                
+                <div class="info-panel">
+                    <p id="status" class="status">Joylashuvingizni aniqlash uchun quyidagi tugmani bosing.</p>
+                    <button id="locateBtn" class="btn-primary">Joylashuvni aniqlash</button>
+                </div>
+            </section>
 
-        <section class="card map-section">
-            <h2>Xarita orqali ko'rinish</h2>
-            <div id="map" class="map"></div>
-        </section>
-
+            <section class="card map-section">
+                <h2>Xarita orqali ko'rinish</h2>
+                <div id="map" class="map"></div>
+            </section>
+        </main>
+        
         <footer class="footer">
             <p>&copy; 2026 Masjidgacha. Barcha huquqlar himoyalangan.</p>
         </footer>
-    </main>
+    </div>
 
+    <!-- Leaflet JS -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9E6QJt8CNhZRCQOJUWcFDKM7piujFK4MwFfy2x7OWU=" crossorigin=""></script>
     <script src="script.js"></script>
 </body>
