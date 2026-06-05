@@ -1,204 +1,470 @@
-/* Reset & Base */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ============================================================
+   RESET & BASE
+============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:         #0b0f1a;
+  --bg2:        #111827;
+  --surface:    rgba(255,255,255,0.04);
+  --border:     rgba(255,255,255,0.08);
+  --border2:    rgba(255,255,255,0.13);
+  --text:       #f1f5f9;
+  --text2:      #94a3b8;
+  --text3:      #64748b;
+  --accent:     #3b82f6;
+  --accent-h:   #2563eb;
+  --gold:       #f59e0b;
+  --gold2:      #fbbf24;
+  --red:        #ef4444;
+  --radius:     16px;
+  --radius-sm:  10px;
+  --shadow:     0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg:  0 8px 48px rgba(0,0,0,0.5);
+}
+
+.light-mode {
+  --bg:         #f8fafc;
+  --bg2:        #f1f5f9;
+  --surface:    rgba(0,0,0,0.03);
+  --border:     rgba(0,0,0,0.08);
+  --border2:    rgba(0,0,0,0.13);
+  --text:       #0f172a;
+  --text2:      #475569;
+  --text3:      #94a3b8;
+  --shadow:     0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 48px rgba(0,0,0,0.12);
 }
 
 html, body {
-  height: 100%;
-  font-family: 'Inter', sans-serif;
-  background: radial-gradient(circle at top, #1a234a 0%, #0d1127 100%);
-  color: #f1f5f9;
+  min-height: 100%;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
 }
 
-/* Butun ekranda elementlarni markazda saqlash uchun */
-.wrapper {
-  min-height: 100vh;
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ============================================================
+   TOPBAR
+============================================================ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(11,15,26,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.light-mode .topbar { background: rgba(248,250,252,0.85); }
+
+.topbar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  height: 60px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 2rem 1rem;
+  justify-content: space-between;
 }
 
-/* Konteyner kengligi cheklandi (Katta ekranda ham chiroyli ixcham turadi) */
-.container {
-  width: 100%;
-  max-width: 440px;
+.logo {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.logo-icon { font-size: 1.4rem; }
+.logo-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
   gap: 1.5rem;
 }
+.topbar-nav a {
+  font-size: 0.9rem;
+  color: var(--text2);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.topbar-nav a:hover { color: var(--text); }
 
-/* Hero Section */
+.theme-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--border2); color: var(--text); }
+
+/* ============================================================
+   PAGE LAYOUT
+============================================================ */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ============================================================
+   HERO
+============================================================ */
 .hero {
   text-align: center;
+  padding: 2rem 0 1rem;
 }
-
 .hero h1 {
-  font-size: 2rem;
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
-  margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #ffd700, #ff9f1a);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.75rem;
+  color: var(--text);
 }
-
 .hero p {
-  font-size: 0.95rem;
-  color: #94a3b8;
+  font-size: 1.05rem;
+  color: var(--text2);
+  max-width: 480px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
 }
 
-/* Card Dizayni */
-.card {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  padding: 1.75rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-direction: column;
+.btn-find {
+  display: inline-flex;
   align-items: center;
-  gap: 1.5rem;
-}
-
-.map-section h2 {
-  font-size: 1.1rem;
+  gap: 0.5rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #cbd5e1;
-  width: 100%;
-  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.35);
 }
-
-/* Kompas UI */
-.compass-wrapper {
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 50%;
-  display: inline-block;
+.btn-find:hover {
+  background: var(--accent-h);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(59,130,246,0.45);
 }
+.btn-find:active { transform: translateY(0); }
+.btn-find.loading { opacity: 0.7; pointer-events: none; }
 
-.compass {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  border: 4px solid #334155;
-  background: #0f172a;
-}
-
-.compass-dial {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-}
-
-.direction {
-  position: absolute;
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: #64748b;
-}
-
-.direction.n { top: 8px; left: 50%; transform: translateX(-50%); color: #ef4444; }
-.direction.e { right: 10px; top: 50%; transform: translateY(-50%); }
-.direction.s { bottom: 8px; left: 50%; transform: translateX(-50%); }
-.direction.w { left: 10px; top: 50%; transform: translateY(-50%); }
-
-/* Kompas Mili (Arrow) */
-.arrow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 140px;
-  /* Mil markazda aylanishi uchun to'g'ri transform-origin */
-  margin-top: -70px;
-  margin-left: -10px;
-  transform-origin: center center;
-  transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
-  z-index: 10;
-}
-
-/* Yuqori tillarang qism */
-.arrow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-bottom: 70px solid #ffd700;
-}
-
-/* Pastki kumushrang qism */
-.arrow::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 70px solid #64748b;
-}
-
-/* Info Panel va Tugma */
-.info-panel {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
+/* ============================================================
+   STATS ROW
+============================================================ */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
 
-.status {
-  font-size: 0.9rem;
-  color: #cbd5e1;
-  text-align: center;
-  padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  min-height: 44px;
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+
+.stat-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.stat-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+.stat-value.pending { color: var(--text3); }
+.stat-location { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; }
+
+/* ============================================================
+   MAIN GRID: Compass + Map
+============================================================ */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
-  color: #0f172a;
-  border: none;
-  padding: 0.85rem;
-  border-radius: 14px;
+.glass-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: border-color 0.2s;
+}
+.glass-card:hover { border-color: var(--border2); }
+
+.card-title {
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* ============================================================
+   COMPASS
+============================================================ */
+.compass-card { align-items: center; }
+
+.compass-outer {
+  padding: 1rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+}
+
+.compass-ring {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg2);
+  box-shadow:
+    inset 0 2px 12px rgba(0,0,0,0.4),
+    0 0 0 8px rgba(255,255,255,0.02);
+}
+
+.compass-ticks {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.25);
+  height: 100%;
+  pointer-events: none;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 140, 0, 0.4);
-}
-
-/* Xarita bloki fixed balandlikda */
-.map {
-  width: 100%;
-  height: 220px;
-  border-radius: 16px;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Footer */
-.footer {
-  margin-top: 2rem;
+/* Cardinal direction labels */
+.cdir {
+  position: absolute;
+  font-family: 'DM Mono', monospace;
   font-size: 0.8rem;
-  color: #475569;
+  font-weight: 500;
+  color: var(--text3);
+  user-select: none;
+}
+.cdir.n { top: 10px; left: 50%; transform: translateX(-50%); color: var(--red); font-weight: 700; }
+.cdir.e { right: 12px; top: 50%; transform: translateY(-50%); }
+.cdir.s { bottom: 10px; left: 50%; transform: translateX(-50%); }
+.cdir.w { left: 12px; top: 50%; transform: translateY(-50%); }
+
+/* Needle wrapper — rotates the whole needle */
+.needle-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-origin: center center;
+  transform: rotate(0deg);
+  transition: transform 1.4s cubic-bezier(0.19, 1, 0.22, 1);
+  z-index: 10;
+}
+
+.needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.needle-north {
+  flex: 1;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(180deg, var(--gold2), var(--gold));
+  border-radius: 2px 2px 0 0;
+}
+.needle-south {
+  flex: 1;
+  clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+  background: var(--text3);
+  border-radius: 0 0 2px 2px;
+}
+
+/* Center dot */
+.compass-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg2);
+  border: 3px solid var(--border2);
+  z-index: 20;
+}
+
+.compass-info {
+  font-size: 0.88rem;
+  color: var(--text2);
+  text-align: center;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+}
+
+/* ============================================================
+   MAP
+============================================================ */
+.map-card { }
+
+.leafmap {
+  width: 100%;
+  height: 280px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: none;
+}
+
+.map-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border2);
+  color: var(--text3);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* ============================================================
+   INFO SECTION
+============================================================ */
+.info-section {
+  padding: 1rem 0;
+}
+.info-section h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.info-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.info-icon { font-size: 1.75rem; margin-bottom: 0.75rem; }
+.info-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+.info-card p { font-size: 0.88rem; color: var(--text2); line-height: 1.6; }
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
   text-align: center;
 }
+.footer p { font-size: 0.85rem; color: var(--text3); }
+.footer-links {
+  display: flex;
+  gap: 1.25rem;
+}
+.footer-links a { font-size: 0.82rem; color: var(--text3); }
+.footer-links a:hover { color: var(--text2); }
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 768px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .main-grid { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr; }
+  .compass-ring { width: 210px; height: 210px; }
+  .needle { height: 130px; }
+  .leafmap, .map-hint { height: 240px; }
+}
+
+@media (max-width: 480px) {
+  .page { padding: 1.5rem 1rem 1.5rem; }
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .hero h1 { font-size: 1.75rem; }
+  .glass-card { padding: 1.25rem; }
+}
+
+/* ============================================================
+   LEAFLET DARK OVERRIDE
+============================================================ */
+.leaflet-tile { filter: brightness(0.85) saturate(0.9); }
+.light-mode .leaflet-tile { filter: none; }
+.leaflet-popup-content-wrapper {
+  background: var(--bg2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.leaflet-popup-tip { background: var(--bg2); }
+
+/* ============================================================
+   ACTIVE STATE (when found)
+============================================================ */
+.stat-card.active { border-color: var(--accent); }
+.stat-card.active .stat-value { color: var(--accent); }
