@@ -1,5 +1,5 @@
 /* ============================================================
-   QIBLA FINDER — style.css
+   QIBLA FINDER — style.css (tuzatilgan versiya)
 ============================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,7 +76,11 @@ body.light-mode .topbar { background: rgba(240,247,240,0.9); }
   background: radial-gradient(circle at 40% 35%, #1e3a1e, #0a1a0a);
   border: 3px solid #2d5a2d;
   box-shadow: 0 0 0 6px #1a3a1a, inset 0 0 40px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.4);
-  transition: transform 0.3s ease;
+  /* Tuzatish: will-change GPU ga o'tkazish — tebranish kamayadi */
+  will-change: transform;
+  transform-origin: center center;
+  /* Mobilda tezroq va silliqroq */
+  transition: transform 0.08s linear;
 }
 .compass-ticks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
@@ -87,14 +91,15 @@ body.light-mode .topbar { background: rgba(240,247,240,0.9); }
 .cdir.e { right: 10px; top: 50%; transform: translateY(-50%); }
 .cdir.w { left: 10px; top: 50%; transform: translateY(-50%); }
 
-/* KAABA ORBIT — rotates with needle, Ka'ba sits at top of this orbit */
+/* KAABA ORBIT */
 .kaaba-orbit {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  transition: transform 0.2s ease;
+  will-change: transform;
   transform-origin: center center;
+  transition: transform 0.08s linear;
 }
 .kaaba-marker {
   position: absolute;
@@ -122,8 +127,9 @@ body.light-mode .topbar { background: rgba(240,247,240,0.9); }
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  transition: transform 0.15s ease;
+  will-change: transform;
   transform-origin: center center;
+  transition: transform 0.08s linear;
 }
 .needle {
   position: absolute;
@@ -187,3 +193,14 @@ body.light-mode .topbar { background: rgba(240,247,240,0.9); }
 .footer-links { display: flex; gap: 16px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
 .footer-links a { color: var(--text2); text-decoration: none; transition: color 0.2s; }
 .footer-links a:hover { color: var(--accent); }
+
+/* TOUCH OPTIMIZATSIYA */
+@media (pointer: coarse) {
+  .compass-ring,
+  .needle-wrap,
+  .kaaba-orbit {
+    /* Mobilda touch events bilan interferensiya bo'lmasligi uchun */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+}
