@@ -1,5 +1,5 @@
 /* ============================================================
-   QIBLA FINDER — script.js  (yangilangan versiya)
+   QIBLA FINDER — script.js (to'liq tuzatilgan versiya)
 ============================================================ */
 const KAABA_LAT = 21.4225;
 const KAABA_LON = 39.8262;
@@ -21,7 +21,22 @@ const compassRing   = document.getElementById('compassRing');
 
 let leafMap = null;
 let qiblaBearing = null;
-let deviceHeading = 0;
+
+/* ============================================================
+   SMOOTHING — tebranishlarni kamaytirish uchun
+   Exponential moving average (EMA) burchaklar uchun
+============================================================ */
+const ALPHA = 0.12; // kichikroq = tekisroq, lekin sekinroq | 0.1-0.2 ideal
+let smoothedHeading = null;
+
+function smoothAngle(current, target) {
+  if (current === null) return target;
+  // Burchak "o'rash" muammosini hal qilish (359° → 1° bo'lganda qisqa yo'l)
+  let diff = target - current;
+  if (diff > 180)  diff -= 360;
+  if (diff < -180) diff += 360;
+  return (current + ALPHA * diff + 360) % 360;
+}
 
 /* ============================================================
    COMPASS TICKS (SVG)
@@ -31,10 +46,10 @@ let deviceHeading = 0;
   if (!g) return;
   const cx = 130, cy = 130, r = 125;
   for (let i = 0; i < 72; i++) {
-    const angle    = (i * 5) * Math.PI / 180;
-    const isMajor  = i % 9 === 0;
-    const isMed    = i % 3 === 0;
-    const len      = isMajor ? 12 : isMed ? 8 : 5;
+    const angle   = (i * 5) * Math.PI / 180;
+    const isMajor = i % 9 === 0;
+    const isMed   = i % 3 === 0;
+    const len     = isMajor ? 12 : isMed ? 8 : 5;
     const x1 = cx + (r - 2) * Math.sin(angle);
     const y1 = cy - (r - 2) * Math.cos(angle);
     const x2 = cx + (r - 2 - len) * Math.sin(angle);
@@ -72,61 +87,119 @@ function bearingLabel(deg) {
 /* ============================================================
    DISPLAY UPDATE — igna + Ka'ba + halqa
 ============================================================ */
-function updateCompassDisplay() {
+function updateCompassDisplay(deviceHeading) {
   if (qiblaBearing === null) return;
 
-  // Halqa (ticks, N/S/E/W) — qurilma yo'nalishiga qarab teskari aylanadi
+  // Halqa — qurilma yo'nalishiga qarab teskari aylanadi (shimol har doim yuqorida)
   compassRing.style.transform = `rotate(${-deviceHeading}deg)`;
 
-  // Igna — haqiqiy qibla yo'nalishini ko'rsatadi (deviceHeading hisobga olinib)
+  // Igna va Ka'ba — qibla burchagida turadi (qurilma hisobga olinib)
   const needleAngle = qiblaBearing - deviceHeading;
-  needleWrap.style.transform = `rotate(${needleAngle}deg)`;
-
-  // Ka'ba belgisi — ignaning uchida, shu burchakda aylanadi
-  kaabaOrbit.style.transform = `rotate(${needleAngle}deg)`;
-}
-
-function rotateNeedle(bearing) {
-  qiblaBearing = bearing;
-  updateCompassDisplay();
+  needleWrap.style.transform  = `rotate(${needleAngle}deg)`;
+  kaabaOrbit.style.transform  = `rotate(${needleAngle}deg)`;
 }
 
 /* ============================================================
-   DEVICE ORIENTATION (kompas sensori)
+   DEVICE ORIENTATION — to'liq qayta yozildi
+   
+   Muammo 1: Android da alpha = ekran rotatsiyasi, shimol emas.
+             Lekin absolute=true bo'lsa, alpha = haqiqiy shimoldan burchak.
+   
+   Muammo 2: Qurilma gorizontal/vertikal ushlanganda burchak o'zgaradi.
+             beta (old-orqa egilish) va gamma (chap-o'ng egilish) ni
+             hisobga olish kerak.
+   
+   Muammo 3: Tez harakatda titroq — EMA smoothing bilan hal qilinadi.
 ============================================================ */
+let orientationListenerActive = false;
+
+function computeTrueHeading(e) {
+  // --- iOS: webkitCompassHeading to'g'ridan-to'g'ri shimolga nisbatan daraja ---
+  if (typeof e.webkitCompassHeading === 'number' && e.webkitCompassHeading >= 0) {
+    return e.webkitCompassHeading;
+  }
+
+  // --- Android (absolute orientation events) ---
+  // alpha: qurilma Z o'qi atrofida aylanish (0-360, shimolga nisbatan)
+  // beta:  qurilma X o'qi atrofida egilish (-180..180, oldingaorqa)
+  // gamma: qurilma Y o'qi atrofida egilish (-90..90, chap-o'ng)
+  const alpha = e.alpha;
+  const beta  = e.beta;
+  const gamma = e.gamma;
+
+  if (alpha === null || alpha === undefined) return null;
+
+  // Qurilma orientatsiyasiga qarab tuzatish
+  // Agar telefon tekis yotsa (beta≈0, gamma≈0) — alpha ni to'g'ridan ishlatish mumkin
+  // Agar tik tutilsa (beta≈90) — boshqa formula kerak
+  const rad = Math.PI / 180;
+  const b = (beta  || 0) * rad;
+  const g = (gamma || 0) * rad;
+  const a = alpha * rad;
+
+  // Kompas shimol uchun tuzatish (qurilma og'ishi hisobga olinadi)
+  // Bu formulasi telefon tik (portrait) tutilganda to'g'ri ishlaydi
+  const cosB = Math.cos(b);
+  const sinB = Math.sin(b);
+  const cosG = Math.cos(g);
+  const sinG = Math.sin(g);
+  const cosA = Math.cos(a);
+  const sinA = Math.sin(a);
+
+  // X, Y, Z o'qlari bo'yicha magnit vektori
+  const Bx = cosA * cosG + sinA * sinB * sinG;
+  const By = sinA * cosG - cosA * sinB * sinG;
+
+  let heading = radToDeg(Math.atan2(-By, Bx));
+  heading = (heading + 360) % 360;
+
+  return heading;
+}
+
 function handleOrientation(e) {
-  let heading = null;
+  const rawHeading = computeTrueHeading(e);
+  if (rawHeading === null) return;
 
-  // iOS: webkitCompassHeading — to'g'ridan-to'g'ri shimolga nisbatan daraja
-  if (typeof e.webkitCompassHeading === 'number') {
-    heading = e.webkitCompassHeading;
-  }
-  // Android: alpha — ekran yo'nalishi, 360 - alpha = shimol
-  else if (e.alpha !== null && e.alpha !== undefined) {
-    heading = (360 - e.alpha + 360) % 360;
-  }
+  // EMA smoothing — tez harakatda siltanishni oldini oladi
+  smoothedHeading = smoothAngle(smoothedHeading, rawHeading);
 
-  if (heading !== null) {
-    deviceHeading = heading;
-    updateCompassDisplay();
+  updateCompassDisplay(smoothedHeading);
+
+  if (motionNote.style.display === 'none') {
     motionNote.style.display = 'block';
   }
 }
 
+/* ============================================================
+   ORIENTATION PERMISSION & START
+============================================================ */
 function startOrientation() {
   if (typeof DeviceOrientationEvent === 'undefined') return;
+  if (orientationListenerActive) return;
 
-  // iOS 13+ — ruxsat so'rash kerak
+  function addListener() {
+    // Android: deviceorientationabsolute = haqiqiy shimolga nisbatan (ustunlik berish)
+    if ('ondeviceorientationabsolute' in window) {
+      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    }
+    // Qo'shimcha ravishda oddiy deviceorientation ham tinglash (iOS + eski Android)
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    orientationListenerActive = true;
+  }
+
+  // iOS 13+ ruxsat so'rash
   if (typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
       .then(state => {
         if (state === 'granted') {
-          window.addEventListener('deviceorientation', handleOrientation, true);
+          addListener();
+        } else {
+          compassLabel.textContent = '🔒 Kompas uchun ruxsat berilmadi. Brauzer sozlamalarini tekshiring.';
         }
       })
-      .catch(() => {});
+      .catch(() => { addListener(); }); // ruxsat muammosi bo'lsa ham sinab ko'rish
   } else {
-    window.addEventListener('deviceorientation', handleOrientation, true);
+    addListener();
   }
 }
 
@@ -214,8 +287,10 @@ function initMap(lat, lon) {
 async function handleSuccess(pos) {
   const { latitude: lat, longitude: lon } = pos.coords;
   const bearing = calcQibla(lat, lon);
+  qiblaBearing  = bearing;
 
-  rotateNeedle(bearing);
+  // Dastlab qurilma yo'nalishisiz ko'rsatish (shimolni 0° deb)
+  updateCompassDisplay(smoothedHeading || 0);
   compassLabel.textContent = `🕌 Qibla: ${Math.round(bearing)}° — ${bearingLabel(bearing)} tomoni`;
 
   initMap(lat, lon);
@@ -232,7 +307,7 @@ async function handleSuccess(pos) {
   findBtn.classList.remove('loading');
   findBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
 
-  // Kompas sensorini yoqish
+  // Kompas sensorini ishga tushirish (joylashuv aniqlanganidan keyin)
   startOrientation();
 }
 
@@ -294,8 +369,13 @@ themeToggle.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SPIN KEYFRAME
+   CSS ANIMATION
 ============================================================ */
 const styleEl = document.createElement('style');
-styleEl.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+styleEl.textContent = `
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .compass-ring  { transition: transform 0.08s linear; }
+  .needle-wrap   { transition: transform 0.08s linear; }
+  .kaaba-orbit   { transition: transform 0.08s linear; }
+`;
 document.head.appendChild(styleEl);
