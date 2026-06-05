@@ -1,111 +1,204 @@
-/* style.css – Masjidgacha Qibla Web App */
-
 /* Reset & Base */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
+
 html, body {
   height: 100%;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #0a0e2a, #1c1f4a);
-  color: #e0e0e0;
-  overflow-x: hidden;
+  font-family: 'Inter', sans-serif;
+  background: radial-gradient(circle at top, #1a234a 0%, #0d1127 100%);
+  color: #f1f5f9;
 }
 
-/* Container */
-.container {
-  max-width: 420px;
-  margin: 0 auto;
-  padding: 1.5rem;
+/* Butun ekranda elementlarni markazda saqlash uchun */
+.wrapper {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  padding: 2rem 1rem;
 }
 
-.title {
-  margin-top: 2rem;
-  font-size: 2rem;
-  font-weight: 600;
+/* Konteyner kengligi cheklandi (Katta ekranda ham chiroyli ixcham turadi) */
+.container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Hero Section */
+.hero {
   text-align: center;
-  background: linear-gradient(90deg, #ffcc00, #ff7b00);
+}
+
+.hero h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #ffd700, #ff9f1a);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.subtitle {
-  margin: 0.5rem 0 1.5rem;
-  font-size: 1rem;
-  color: #b0b0b0;
-  text-align: center;
+.hero p {
+  font-size: 0.95rem;
+  color: #94a3b8;
 }
 
-/* Card */
-.compass-card {
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(8px);
-  border-radius: 12px;
-  padding: 1.5rem;
+/* Card Dizayni */
+.card {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 1.75rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.map-section h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #cbd5e1;
   width: 100%;
-  text-align: center;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  text-align: left;
+}
+
+/* Kompas UI */
+.compass-wrapper {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  display: inline-block;
 }
 
 .compass {
   position: relative;
-  width: 260px;
-  height: 260px;
-  margin: 0 auto;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 4px solid #334155;
+  background: #0f172a;
 }
-.compass-bg {
+
+.compass-dial {
+  position: absolute;
   width: 100%;
   height: 100%;
-  object-fit: contain;
 }
-.compass-arrow {
+
+.direction {
+  position: absolute;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.direction.n { top: 8px; left: 50%; transform: translateX(-50%); color: #ef4444; }
+.direction.e { right: 10px; top: 50%; transform: translateY(-50%); }
+.direction.s { bottom: 8px; left: 50%; transform: translateX(-50%); }
+.direction.w { left: 10px; top: 50%; transform: translateY(-50%); }
+
+/* Kompas Mili (Arrow) */
+.arrow {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 40px;
-  height: 120px;
-  transform-origin: 50% 80%;
-  transition: transform 0.8s cubic-bezier(.25,.8,.25,1);
-  pointer-events: none;
+  width: 20px;
+  height: 140px;
+  /* Mil markazda aylanishi uchun to'g'ri transform-origin */
+  margin-top: -70px;
+  margin-left: -10px;
+  transform-origin: center center;
+  transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+  z-index: 10;
+}
+
+/* Yuqori tillarang qism */
+.arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 70px solid #ffd700;
+}
+
+/* Pastki kumushrang qism */
+.arrow::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 70px solid #64748b;
+}
+
+/* Info Panel va Tugma */
+.info-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .status {
-  margin: 1rem 0;
-  font-size: 0.95rem;
-  min-height: 1.2rem;
-  color: #a0a0a0;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  text-align: center;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  min-height: 44px;
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, #ffa500, #ff4500);
-  color: #fff;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  color: #0f172a;
   border: none;
-  padding: 0.6rem 1.4rem;
-  border-radius: 30px;
+  padding: 0.85rem;
+  border-radius: 14px;
   font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.25);
 }
+
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255,165,0,0.4);
+  box-shadow: 0 6px 20px rgba(255, 140, 0, 0.4);
 }
 
+/* Xarita bloki fixed balandlikda */
+.map {
+  width: 100%;
+  height: 220px;
+  border-radius: 16px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Footer */
 .footer {
-  margin-top: auto;
+  margin-top: 2rem;
   font-size: 0.8rem;
-  color: #777;
+  color: #475569;
   text-align: center;
-  padding-top: 2rem;
-}
-
-@media (max-width: 480px) {
-  .container { padding: 1rem; }
-  .compass { width: 220px; height: 220px; }
 }
