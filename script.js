@@ -1,28 +1,27 @@
 /* ============================================================
-   QIBLA FINDER — script.js
+   QIBLA FINDER — script.js  (yangilangan versiya)
 ============================================================ */
-
 const KAABA_LAT = 21.4225;
 const KAABA_LON = 39.8262;
 
-// DOM refs
-const findBtn      = document.getElementById('findBtn');
-const needleWrap   = document.getElementById('needleWrap');
-const compassLabel = document.getElementById('compassLabel');
-
+const findBtn       = document.getElementById('findBtn');
+const needleWrap    = document.getElementById('needleWrap');
+const compassLabel  = document.getElementById('compassLabel');
+const kaabaOrbit    = document.getElementById('kaabaOrbit');
 const statDirection = document.getElementById('statDirection');
 const statDegree    = document.getElementById('statDegree');
 const statNorth     = document.getElementById('statNorth');
 const statLocation  = document.getElementById('statLocation');
 const statsRow      = document.getElementById('statsRow');
-
-const mapEl   = document.getElementById('map');
-const mapHint = document.getElementById('mapHint');
-
-const themeToggle = document.getElementById('themeToggle');
+const mapEl         = document.getElementById('map');
+const mapHint       = document.getElementById('mapHint');
+const themeToggle   = document.getElementById('themeToggle');
+const motionNote    = document.getElementById('motionNote');
+const compassRing   = document.getElementById('compassRing');
 
 let leafMap = null;
-let currentBearing = 0;
+let qiblaBearing = null;
+let deviceHeading = 0;
 
 /* ============================================================
    COMPASS TICKS (SVG)
@@ -32,10 +31,10 @@ let currentBearing = 0;
   if (!g) return;
   const cx = 130, cy = 130, r = 125;
   for (let i = 0; i < 72; i++) {
-    const angle = (i * 5) * Math.PI / 180;
-    const isMajor = i % 9 === 0; // every 45°
-    const isMed   = i % 3 === 0; // every 15°
-    const len = isMajor ? 12 : isMed ? 8 : 5;
+    const angle    = (i * 5) * Math.PI / 180;
+    const isMajor  = i % 9 === 0;
+    const isMed    = i % 3 === 0;
+    const len      = isMajor ? 12 : isMed ? 8 : 5;
     const x1 = cx + (r - 2) * Math.sin(angle);
     const y1 = cy - (r - 2) * Math.cos(angle);
     const x2 = cx + (r - 2 - len) * Math.sin(angle);
@@ -57,25 +56,78 @@ function degToRad(d) { return d * Math.PI / 180; }
 function radToDeg(r) { return r * 180 / Math.PI; }
 
 function calcQibla(lat, lon) {
-  const φ1 = degToRad(lat), λ1 = degToRad(lon);
+  const φ1 = degToRad(lat),  λ1 = degToRad(lon);
   const φ2 = degToRad(KAABA_LAT), λ2 = degToRad(KAABA_LON);
   const Δλ = λ2 - λ1;
-  const x = Math.sin(Δλ);
-  const y = Math.cos(φ1) * Math.tan(φ2) - Math.sin(φ1) * Math.cos(Δλ);
+  const x  = Math.sin(Δλ);
+  const y  = Math.cos(φ1) * Math.tan(φ2) - Math.sin(φ1) * Math.cos(Δλ);
   return ((radToDeg(Math.atan2(x, y)) % 360) + 360) % 360;
 }
 
 function bearingLabel(deg) {
-  const dirs = ['Shimol','Shimoli-Sharq','Sharq','Janubi-Sharq','Janub','Janubi-G\'arb','G\'arb','Shimoli-G\'arb'];
+  const dirs = ['Shimol','Sh-Sharq','Sharq','J-Sharq','Janub','J-G\'arb','G\'arb','Sh-G\'arb'];
   return dirs[Math.round(deg / 45) % 8];
 }
 
 /* ============================================================
-   NEEDLE ROTATE
+   DISPLAY UPDATE — igna + Ka'ba + halqa
 ============================================================ */
+function updateCompassDisplay() {
+  if (qiblaBearing === null) return;
+
+  // Halqa (ticks, N/S/E/W) — qurilma yo'nalishiga qarab teskari aylanadi
+  compassRing.style.transform = `rotate(${-deviceHeading}deg)`;
+
+  // Igna — haqiqiy qibla yo'nalishini ko'rsatadi (deviceHeading hisobga olinib)
+  const needleAngle = qiblaBearing - deviceHeading;
+  needleWrap.style.transform = `rotate(${needleAngle}deg)`;
+
+  // Ka'ba belgisi — ignaning uchida, shu burchakda aylanadi
+  kaabaOrbit.style.transform = `rotate(${needleAngle}deg)`;
+}
+
 function rotateNeedle(bearing) {
-  currentBearing = bearing;
-  needleWrap.style.transform = `rotate(${bearing}deg)`;
+  qiblaBearing = bearing;
+  updateCompassDisplay();
+}
+
+/* ============================================================
+   DEVICE ORIENTATION (kompas sensori)
+============================================================ */
+function handleOrientation(e) {
+  let heading = null;
+
+  // iOS: webkitCompassHeading — to'g'ridan-to'g'ri shimolga nisbatan daraja
+  if (typeof e.webkitCompassHeading === 'number') {
+    heading = e.webkitCompassHeading;
+  }
+  // Android: alpha — ekran yo'nalishi, 360 - alpha = shimol
+  else if (e.alpha !== null && e.alpha !== undefined) {
+    heading = (360 - e.alpha + 360) % 360;
+  }
+
+  if (heading !== null) {
+    deviceHeading = heading;
+    updateCompassDisplay();
+    motionNote.style.display = 'block';
+  }
+}
+
+function startOrientation() {
+  if (typeof DeviceOrientationEvent === 'undefined') return;
+
+  // iOS 13+ — ruxsat so'rash kerak
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') {
+          window.addEventListener('deviceorientation', handleOrientation, true);
+        }
+      })
+      .catch(() => {});
+  } else {
+    window.addEventListener('deviceorientation', handleOrientation, true);
+  }
 }
 
 /* ============================================================
@@ -90,7 +142,7 @@ function updateStats(bearing, lat, lon, locationName) {
 }
 
 /* ============================================================
-   REVERSE GEOCODE (OpenStreetMap Nominatim)
+   REVERSE GEOCODE
 ============================================================ */
 async function reverseGeocode(lat, lon) {
   try {
@@ -109,12 +161,13 @@ async function reverseGeocode(lat, lon) {
 /* ============================================================
    MAP
 ============================================================ */
-function initMap(lat, lon, bearing) {
+function initMap(lat, lon) {
   mapHint.style.display = 'none';
   mapEl.style.display   = 'block';
 
   if (!leafMap) {
-    leafMap = L.map('map', { zoomControl: true, attributionControl: false }).setView([lat, lon], 5);
+    leafMap = L.map('map', { zoomControl: true, attributionControl: false })
+               .setView([lat, lon], 5);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter_no_labels/{z}/{x}/{y}{r}.png', {
       subdomains: 'abcd', maxZoom: 18
     }).addTo(leafMap);
@@ -123,53 +176,40 @@ function initMap(lat, lon, bearing) {
     }).addTo(leafMap);
   } else {
     leafMap.setView([lat, lon], 5);
-    leafMap.eachLayer(l => { if (l._qiblaLine || l._userMarker || l._kaabaMarker) leafMap.removeLayer(l); });
+    leafMap.eachLayer(l => {
+      if (l._qiblaLine || l._userMarker || l._kaabaMarker) leafMap.removeLayer(l);
+    });
   }
 
-  // Draw line from user → Kaaba
   const line = L.polyline([[lat, lon], [KAABA_LAT, KAABA_LON]], {
     color: '#f59e0b', weight: 2.5, opacity: 0.85, dashArray: '8 5'
   });
   line._qiblaLine = true;
   line.addTo(leafMap);
 
-  // User marker (blue dot)
   const userIcon = L.divIcon({
     className: '',
-    html: `<div style="
-      width:14px;height:14px;
-      background:#3b82f6;
-      border:3px solid #fff;
-      border-radius:50%;
-      box-shadow:0 0 0 4px rgba(59,130,246,0.3)
-    "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7]
+    html: `<div style="width:14px;height:14px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(59,130,246,0.3)"></div>`,
+    iconSize: [14, 14], iconAnchor: [7, 7]
   });
   const um = L.marker([lat, lon], { icon: userIcon });
   um._userMarker = true;
-  um.addTo(leafMap).bindPopup('<b>📍 Siz shu yerdassiz</b>').openPopup();
+  um.addTo(leafMap).bindPopup('<b>📍 Siz shu yerdasiz</b>').openPopup();
 
-  // Kaaba marker
   const kaabaIcon = L.divIcon({
     className: '',
-    html: `<div style="
-      font-size:22px;line-height:1;
-      filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6))
-    ">🕋</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    html: `<div style="font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.6))">🕋</div>`,
+    iconSize: [28, 28], iconAnchor: [14, 14]
   });
   const km = L.marker([KAABA_LAT, KAABA_LON], { icon: kaabaIcon });
   km._kaabaMarker = true;
-  km.addTo(leafMap).bindPopup('<b>🕋 Ka\'ba – Makka</b>');
+  km.addTo(leafMap).bindPopup("<b>🕋 Ka'ba – Makka</b>");
 
-  // Fit both points
   leafMap.fitBounds([[lat, lon], [KAABA_LAT, KAABA_LON]], { padding: [40, 40] });
 }
 
 /* ============================================================
-   GEOLOCATION HANDLERS
+   GEOLOCATION
 ============================================================ */
 async function handleSuccess(pos) {
   const { latitude: lat, longitude: lon } = pos.coords;
@@ -178,9 +218,8 @@ async function handleSuccess(pos) {
   rotateNeedle(bearing);
   compassLabel.textContent = `🕌 Qibla: ${Math.round(bearing)}° — ${bearingLabel(bearing)} tomoni`;
 
-  initMap(lat, lon, bearing);
+  initMap(lat, lon);
 
-  // Reverse geocode async
   const locationName = await reverseGeocode(lat, lon);
   updateStats(bearing, lat, lon, locationName);
 
@@ -192,6 +231,9 @@ async function handleSuccess(pos) {
   `;
   findBtn.classList.remove('loading');
   findBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+
+  // Kompas sensorini yoqish
+  startOrientation();
 }
 
 function handleError(err) {
@@ -203,15 +245,15 @@ function handleError(err) {
     Qiblani Topish
   `;
   const msgs = {
-    [err.PERMISSION_DENIED]:    '🚫 Geolokatsiya ruxsati rad etildi. Brauzer sozlamalaridan ruxsat bering.',
-    [err.POSITION_UNAVAILABLE]: '📍 Joylashuvni aniqlab bo\'lmadi.',
-    [err.TIMEOUT]:              '⌛ Vaqt tugadi. Qaytadan urinib ko\'ring.',
+    1: '🚫 Geolokatsiya ruxsati rad etildi.',
+    2: '📍 Joylashuvni aniqlab bo\'lmadi.',
+    3: '⌛ Vaqt tugadi. Qaytadan urinib ko\'ring.',
   };
   compassLabel.textContent = msgs[err.code] || '❓ Noma\'lum xato yuz berdi.';
 }
 
 /* ============================================================
-   BUTTON CLICK
+   BUTTON
 ============================================================ */
 findBtn.addEventListener('click', () => {
   if (!navigator.geolocation) {
@@ -242,7 +284,6 @@ if (isLight) document.body.classList.add('light-mode');
 themeToggle.addEventListener('click', () => {
   isLight = !isLight;
   document.body.classList.toggle('light-mode', isLight);
-  // Refresh map tiles
   if (leafMap) {
     leafMap.eachLayer(l => { if (l._url) leafMap.removeLayer(l); });
     const tileUrl = isLight
@@ -253,8 +294,8 @@ themeToggle.addEventListener('click', () => {
 });
 
 /* ============================================================
-   SPIN KEYFRAME (injected)
+   SPIN KEYFRAME
 ============================================================ */
-const style = document.createElement('style');
-style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
-document.head.appendChild(style);
+const styleEl = document.createElement('style');
+styleEl.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+document.head.appendChild(styleEl);
