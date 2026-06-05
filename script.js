@@ -1,11 +1,10 @@
-// script.js – Masjidgacha Qibla Web App
-
-const kaabaLat = 21.4225; // Makkah latitude
-const kaabaLon = 39.8262; // Makkah longitude
+const kaabaLat = 21.4225;
+const kaabaLon = 39.8262;
 
 const statusEl = document.getElementById('status');
 const arrowEl  = document.getElementById('arrow');
 const btnEl    = document.getElementById('locateBtn');
+let map;
 
 function degToRad(d) { return d * Math.PI / 180; }
 function radToDeg(r) { return r * 180 / Math.PI; }
@@ -31,11 +30,30 @@ function updateStatus(msg) {
   statusEl.textContent = msg;
 }
 
+function initMap(lat, lon) {
+  if (map) {
+    map.setView([lat, lon], 13);
+    return;
+  }
+  
+  map = L.map('map').setView([lat, lon], 13);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; CARTO'
+  }).addTo(map);
+
+  L.marker([lat, lon]).addTo(map)
+    .bindPopup('Siz shu yerdassiz')
+    .openPopup();
+}
+
 function handleSuccess(position) {
   const { latitude, longitude } = position.coords;
   const bearing = calculateQibla(latitude, longitude);
+  
   rotateArrow(bearing);
-  updateStatus(`🕌 Sizning qibla bearing: ${Math.round(bearing)}°`);
+  initMap(latitude, longitude);
+  
+  updateStatus(`🕌 Qibla burchagi: ${Math.round(bearing)}° (Shimoldan o'ngga)`);
 }
 
 function handleError(err) {
@@ -51,18 +69,21 @@ function handleError(err) {
       updateStatus('⌛ Vaqt tugadi, qayta urinib ko\'ring.');
       break;
     default:
-      updateStatus('❓ Noma\'lum xato.');
+      updateStatus('❓ Noma\'lum xato yuz berdi.');
   }
 }
 
 btnEl.addEventListener('click', () => {
   updateStatus('⏳ Joylashuvingiz aniqlanmoqda…');
   if (!navigator.geolocation) {
-    updateStatus('❌ Geolocation API bu brauzerda qo\'llab-quvvatlanmaydi.');
+    updateStatus('❌ Brauzeringiz geolokatsiyani qo\'llab-quvvatlamaydi.');
     return;
   }
-  navigator.geolocation.getCurrentPosition(handleSuccess, handleError, { timeout: 12000, enableHighAccuracy: true });
+  navigator.geolocation.getCurrentPosition(handleSuccess, handleError, { 
+    timeout: 12000, 
+    enableHighAccuracy: true 
+  });
 });
 
-// Initial animation – spin slowly to hint interaction
+// Dastlabki pozitsiya
 rotateArrow(0);
