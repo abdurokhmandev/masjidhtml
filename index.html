@@ -1,56 +1,141 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Masjidgacha – Qibla Yo'nalishi</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+6WvZ6V6byMZu+f1eeS0Cml5Zt7N1riRWN6K86v8M=" crossorigin=""/>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qibla Finder – Qibla Yo'nalishi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="wrapper">
-        <main class="container">
-            <header class="hero">
-                <h1>🕋 Qibla Yo'nalishi</h1>
-                <p>Joriy joylashuvingizga asoslanib, Ka'ba tomon yo'nalishni aniqlang.</p>
-            </header>
 
-            <section class="card display-section">
-                <div class="compass-wrapper">
-                    <div class="compass">
-                        <div class="compass-dial">
-                            <span class="direction n">N</span>
-                            <span class="direction e">E</span>
-                            <span class="direction s">S</span>
-                            <span class="direction w">W</span>
-                        </div>
-                        <div class="arrow" id="arrow"></div>
-                    </div>
-                </div>
-                
-                <div class="info-panel">
-                    <p id="status" class="status">Joylashuvingizni aniqlash uchun quyidagi tugmani bosing.</p>
-                    <button id="locateBtn" class="btn-primary">Joylashuvni aniqlash</button>
-                </div>
-            </section>
+  <!-- Top Nav -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">
+        <span class="logo-icon">🕋</span>
+        <span class="logo-text">QiblaFinder</span>
+      </div>
+      <nav class="topbar-nav">
+        <a href="#">Namoz Vaqtlari</a>
+        <button class="theme-toggle" id="themeToggle" title="Temani almashtirish">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
 
-            <section class="card map-section">
-                <h2>Xarita orqali ko'rinish</h2>
-                <div id="map" class="map"></div>
-            </section>
-        </main>
-        
-        <footer class="footer">
-            <p>&copy; 2026 Masjidgacha. Barcha huquqlar himoyalangan.</p>
-        </footer>
+  <main class="page">
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>Qibla Finder</h1>
+      <p>Brauzeringizdan aniq Qibla yo'nalishini toping. Ilovasiz, tezkor va bepul.</p>
+      <button class="btn-find" id="findBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Qiblani Topish
+      </button>
+    </section>
+
+    <!-- Stats row -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <span class="stat-label">Qibla Yo'nalishi</span>
+        <span class="stat-value" id="statDirection">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Qibla Burchagi</span>
+        <span class="stat-value" id="statDegree">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Shimol Burchagi</span>
+        <span class="stat-value" id="statNorth">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Joylashuv</span>
+        <span class="stat-value stat-location" id="statLocation">—</span>
+      </div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9E6QJt8CNhZRCQOJUWcFDKM7piujFK4MwFfy2x7OWU=" crossorigin=""></script>
-    <script src="script.js"></script>
+    <!-- Compass + Map row -->
+    <div class="main-grid">
+
+      <!-- Compass card -->
+      <div class="glass-card compass-card">
+        <div class="card-title">Qibla Kompasi</div>
+        <div class="compass-outer">
+          <div class="compass-ring">
+            <!-- Tick marks -->
+            <svg class="compass-ticks" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+              <g id="ticks"></g>
+            </svg>
+            <!-- Cardinal labels -->
+            <span class="cdir n">N</span>
+            <span class="cdir e">E</span>
+            <span class="cdir s">S</span>
+            <span class="cdir w">W</span>
+            <!-- Needle -->
+            <div class="needle-wrap" id="needleWrap">
+              <div class="needle">
+                <div class="needle-north"></div>
+                <div class="needle-south"></div>
+              </div>
+            </div>
+            <!-- Center dot -->
+            <div class="compass-center"></div>
+          </div>
+        </div>
+        <div class="compass-info">
+          <span id="compassLabel">Qiblani topish uchun yuqoridagi tugmani bosing</span>
+        </div>
+      </div>
+
+      <!-- Map card -->
+      <div class="glass-card map-card">
+        <div class="card-title">Qibla Xaritasi</div>
+        <div id="map" class="leafmap"></div>
+        <div class="map-hint" id="mapHint">📍 Joylashuv aniqlanganidan keyin xarita ko'rinadi</div>
+      </div>
+
+    </div>
+
+    <!-- Info section -->
+    <section class="info-section">
+      <h2>Qibla yo'nalishini qanday topish mumkin?</h2>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-icon">📍</div>
+          <h3>1. Joylashuvga ruxsat bering</h3>
+          <p>"Qiblani Topish" tugmasini bosing va brauzeringizga joylashuvga ruxsat bering.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">🧭</div>
+          <h3>2. Kompasni kalibrlang</h3>
+          <p>Telefoningizni tekis tutib, sakkizlik harakat bilan bir necha marta aylantiring.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">🕋</div>
+          <h3>3. Ka'ba tomon yuzlaning</h3>
+          <p>Kompas mili ko'rsatgan tomonga yuzlaning — bu Qibla yo'nalishi.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 QiblaFinder. Barcha huquqlar himoyalangan.</p>
+    <div class="footer-links">
+      <a href="#">Maxfiylik siyosati</a>
+      <a href="#">Foydalanish shartlari</a>
+      <a href="#">Biz haqimizda</a>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="script.js"></script>
 </body>
 </html>
