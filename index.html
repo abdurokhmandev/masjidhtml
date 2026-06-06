@@ -1,147 +1,409 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Masjidgacha – Qibla Yo'nalishi</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qibla Kompas</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c9a84c;--gold-light:#f0d080;--gold-dim:#8a6e2f;
+  --green:#1a6b3c;--green-light:#2d9a59;
+  --bg:#0a0f1a;--bg2:#0f1828;
+  --surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
+  --text:#e8dfc8;--text-dim:#8a8070;--radius:16px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow-x:hidden}
+body{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:20px 16px 60px}
+
+.bg-orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;opacity:0.3}
+.orb1{width:400px;height:400px;background:radial-gradient(circle,#1a4a2e,transparent);top:-100px;left:-100px}
+.orb2{width:350px;height:350px;background:radial-gradient(circle,#2a1a00,transparent);top:50%;right:-80px;transform:translateY(-50%)}
+.orb3{width:300px;height:300px;background:radial-gradient(circle,#0a1525,transparent);bottom:-60px;left:30%}
+
+.app{position:relative;z-index:1;width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:24px}
+
+.header{text-align:center;padding-top:8px}
+.header-icon{font-size:32px;margin-bottom:8px;display:block;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.header h1{font-family:'Amiri',serif;font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--gold-light),var(--gold),var(--gold-dim));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px}
+.subtitle{font-size:13px;color:var(--text-dim);margin-top:4px;font-weight:300;letter-spacing:0.5px}
+
+.compass-section{display:flex;flex-direction:column;align-items:center;gap:20px}
+
+.compass-outer-ring{
+  position:relative;width:280px;height:280px;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(201,168,76,0.08) 0deg,rgba(26,107,60,0.06) 90deg,rgba(201,168,76,0.08) 180deg,rgba(26,107,60,0.06) 270deg,rgba(201,168,76,0.08) 360deg);
+  border:1.5px solid rgba(201,168,76,0.25);
+  box-shadow:0 0 40px rgba(201,168,76,0.08),inset 0 0 30px rgba(0,0,0,0.4);
+  display:flex;align-items:center;justify-content:center;
+  transition:box-shadow 0.5s ease;
+}
+.compass-outer-ring.active{box-shadow:0 0 60px rgba(201,168,76,0.18),inset 0 0 30px rgba(0,0,0,0.4)}
+
+.tick-marks{position:absolute;inset:0;border-radius:50%}
+
+.compass-ring-label{position:absolute;font-size:13px;font-weight:600;letter-spacing:1px;z-index:5}
+.compass-ring-label.n{top:10px;left:50%;transform:translateX(-50%);color:#e05555}
+.compass-ring-label.s{bottom:10px;left:50%;transform:translateX(-50%);color:var(--text-dim)}
+.compass-ring-label.e{right:12px;top:50%;transform:translateY(-50%);color:var(--text-dim)}
+.compass-ring-label.w{left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim)}
+
+.compass-body{
+  position:relative;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#1a2535,#0c1420);
+  border:1px solid rgba(201,168,76,0.15);
+  box-shadow:inset 0 4px 20px rgba(0,0,0,0.6);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+
+.compass-needle-wrap{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transition:transform 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.needle-container{position:relative;width:8px;height:160px;display:flex;flex-direction:column;align-items:center}
+.needle{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent}
+.needle.north{border-bottom:80px solid #e05555;filter:drop-shadow(0 0 6px rgba(224,85,85,0.6))}
+.needle.south{border-top:80px solid #cccccc;opacity:0.6}
+
+.qibla-arrow-wrap{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transition:transform 1s cubic-bezier(0.34,1.56,0.64,1);
+}
+.qibla-arrow{position:relative;width:6px;height:170px;display:flex;flex-direction:column;align-items:center}
+.arrow-shaft{width:3px;height:60px;background:linear-gradient(to bottom,var(--gold-light),var(--gold));border-radius:2px;box-shadow:0 0 8px rgba(201,168,76,0.7)}
+.arrow-head{width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:18px solid var(--gold-light);order:-1;margin-bottom:-2px;filter:drop-shadow(0 0 8px rgba(240,208,128,0.8))}
+.kaaba-icon{position:absolute;bottom:-10px;font-size:20px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:0.85}}
+
+.compass-center{position:absolute;z-index:10}
+.center-dot{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle,#d4a843,#8a6e2f);border:2px solid var(--gold-light);box-shadow:0 0 12px rgba(201,168,76,0.7)}
+
+.degree-display{display:flex;flex-direction:column;align-items:center;gap:4px}
+.degree-val{font-size:42px;font-weight:600;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;transition:all 0.4s ease}
+.degree-label{font-size:12px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+
+.info-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;width:100%}
+.card{background:var(--surface);border:0.5px solid rgba(201,168,76,0.12);border-radius:var(--radius);padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.3s ease;min-width:0}
+.card.active{background:rgba(201,168,76,0.07);border-color:rgba(201,168,76,0.3);box-shadow:0 0 20px rgba(201,168,76,0.08)}
+.card-icon{font-size:18px}
+.card-content{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;width:100%}
+.card-label{font-size:9px;color:var(--text-dim);letter-spacing:0.5px;text-transform:uppercase;text-align:center}
+.card-val{font-size:12px;font-weight:500;color:var(--gold);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+.status-bar{width:100%;background:var(--surface);border:0.5px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-dim);min-height:44px}
+.status-icon{font-size:16px;flex-shrink:0}
+.status-bar.success{background:rgba(26,107,60,0.15);border-color:rgba(45,154,89,0.3);color:#7ecfa0}
+.status-bar.error{background:rgba(180,40,40,0.12);border-color:rgba(200,60,60,0.3);color:#f08080}
+.status-bar.loading{animation:statusPulse 1.5s ease-in-out infinite}
+@keyframes statusPulse{0%,100%{opacity:1}50%{opacity:0.6}}
+
+.find-btn{position:relative;width:100%;padding:16px;background:linear-gradient(135deg,#1a5c35,#0f3d22);border:1px solid rgba(45,154,89,0.4);border-radius:var(--radius);color:#7ecfa0;font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;cursor:pointer;overflow:hidden;transition:all 0.3s ease;letter-spacing:0.3px}
+.find-btn:hover{background:linear-gradient(135deg,#1f6e3e,#123d22);border-color:rgba(45,154,89,0.6);box-shadow:0 4px 20px rgba(26,107,60,0.3);transform:translateY(-1px)}
+.find-btn:active{transform:translateY(1px);box-shadow:none}
+.find-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.btn-inner{display:flex;align-items:center;justify-content:center;gap:8px;position:relative;z-index:1}
+.btn-icon{font-size:18px}
+
+.manual-section{width:100%}
+.divider{display:flex;align-items:center;gap:12px;margin-bottom:14px;color:var(--text-dim);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:0.5px;background:rgba(255,255,255,0.1)}
+.manual-inputs{display:flex;gap:8px}
+.city-input{flex:1;padding:12px 14px;background:var(--surface);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color 0.3s}
+.city-input:focus{border-color:rgba(201,168,76,0.4);background:var(--surface2)}
+.city-input::placeholder{color:var(--text-dim)}
+.search-btn{padding:12px 18px;background:rgba(201,168,76,0.1);border:0.5px solid rgba(201,168,76,0.3);border-radius:10px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.3s;white-space:nowrap}
+.search-btn:hover{background:rgba(201,168,76,0.18);border-color:rgba(201,168,76,0.5)}
+
+.accuracy-ring{display:none;width:8px;height:8px;border-radius:50%;background:var(--green-light);box-shadow:0 0 0 0 rgba(45,154,89,0.4);animation:accuracyPulse 2s ease-out infinite;position:fixed;bottom:24px;right:24px}
+@keyframes accuracyPulse{0%{box-shadow:0 0 0 0 rgba(45,154,89,0.6)}70%{box-shadow:0 0 0 12px rgba(45,154,89,0)}100%{box-shadow:0 0 0 0 rgba(45,154,89,0)}}
+
+@media(max-width:380px){
+  .compass-outer-ring{width:250px;height:250px}
+  .compass-body{width:195px;height:195px}
+  .degree-val{font-size:36px}
+  .card-val{font-size:11px}
+}
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="logo">
-        <span class="logo-icon">🕋</span>
-        <span class="logo-text">Masjidgacha</span>
-      </div>
-      <nav class="topbar-nav">
-        <button class="theme-toggle" id="themeToggle" title="Temani almashtirish">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
-        </button>
-      </nav>
-    </div>
+
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+<div class="bg-orb orb3"></div>
+
+<div class="app">
+  <header class="header">
+    <div class="header-icon">☪</div>
+    <h1>Qibla Kompas</h1>
+    <p class="subtitle">Ka'baga yo'nalishni aniqlang</p>
   </header>
 
-  <main class="page">
-    <section class="hero">
-      <h1>Masjidgacha</h1>
-      <p>Brauzeringizdan aniq Qibla yo'nalishini toping. Ilovasiz, tezkor va bepul.</p>
-      <button class="btn-find" id="findBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        Qiblani Topish
-      </button>
-    </section>
-
-    <div class="stats-row" id="statsRow">
-      <div class="stat-card">
-        <span class="stat-label">Qibla Yo'nalishi</span>
-        <span class="stat-value" id="statDirection">—</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Qibla Burchagi</span>
-        <span class="stat-value" id="statDegree">—</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Shimol Burchagi</span>
-        <span class="stat-value" id="statNorth">—</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">Joylashuv</span>
-        <span class="stat-value stat-location" id="statLocation">—</span>
-      </div>
-    </div>
-
-    <div class="main-grid">
-      <!-- Compass card -->
-      <div class="glass-card compass-card">
-        <div class="card-title">Qibla Kompasi</div>
-        <div class="compass-outer">
-          <div class="compass-ring" id="compassRing">
-            <svg class="compass-ticks" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
-              <g id="ticks"></g>
-            </svg>
-            <span class="cdir n">N</span>
-            <span class="cdir e">E</span>
-            <span class="cdir s">S</span>
-            <span class="cdir w">W</span>
-            <!-- Ka'ba ikonkasi -->
-            <div class="kaaba-orbit" id="kaabaOrbit">
-              <div class="kaaba-marker" id="kaabaMarker">
-                <svg viewBox="0 0 40 40" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="5" y="8" width="30" height="26" rx="2" fill="#1a1a1a" stroke="#555" stroke-width="1"/>
-                  <rect x="5" y="8" width="30" height="5" fill="#2a2a2a"/>
-                  <rect x="13" y="22" width="9" height="12" rx="1" fill="#0a0a0a"/>
-                  <line x1="5" y1="16" x2="35" y2="16" stroke="#e8c060" stroke-width="1.5"/>
-                  <line x1="5" y1="20" x2="35" y2="20" stroke="#e8c060" stroke-width="0.8" opacity="0.6"/>
-                  <rect x="15" y="10" width="5" height="2.5" rx="0.5" fill="#e8c060" opacity="0.8"/>
-                  <rect x="22" y="10" width="5" height="2.5" rx="0.5" fill="#e8c060" opacity="0.8"/>
-                  <line x1="20" y1="1" x2="20" y2="7" stroke="#e8c060" stroke-width="1.5" stroke-linecap="round"/>
-                  <line x1="16" y1="3" x2="24" y2="3" stroke="#e8c060" stroke-width="1" stroke-linecap="round"/>
-                </svg>
-                <div class="kaaba-label">Ka'ba</div>
-              </div>
-            </div>
-            <!-- Igna -->
-            <div class="needle-wrap" id="needleWrap">
-              <div class="needle">
-                <div class="needle-north"></div>
-                <div class="needle-south"></div>
-              </div>
-            </div>
-            <div class="compass-center"></div>
+  <div class="compass-section">
+    <div class="compass-outer-ring" id="outerRing">
+      <div class="compass-ring-label n">N</div>
+      <div class="compass-ring-label s">S</div>
+      <div class="compass-ring-label e">E</div>
+      <div class="compass-ring-label w">W</div>
+      <div class="tick-marks" id="tickMarks"></div>
+      <div class="compass-body">
+        <div class="compass-needle-wrap" id="needleWrap">
+          <div class="needle-container">
+            <div class="needle north"></div>
+            <div class="needle south"></div>
           </div>
         </div>
-        <div class="compass-info">
-          <span id="compassLabel">Qiblani topish uchun yuqoridagi tugmani bosing</span>
+        <div class="qibla-arrow-wrap" id="qiblaArrowWrap">
+          <div class="qibla-arrow">
+            <div class="arrow-shaft"></div>
+            <div class="arrow-head"></div>
+            <div class="kaaba-icon">🕋</div>
+          </div>
         </div>
-        <div class="motion-note" id="motionNote" style="display:none">
-          📱 Qurilmangizni harakatlantiring — kompas avtomatik aylanadi
+        <div class="compass-center">
+          <div class="center-dot"></div>
         </div>
-      </div>
-
-      <!-- Map card -->
-      <div class="glass-card map-card">
-        <div class="card-title">Qibla Xaritasi</div>
-        <div id="map" class="leafmap" style="display:none"></div>
-        <div class="map-hint" id="mapHint">📍 Joylashuv aniqlanganidan keyin xarita ko'rinadi</div>
       </div>
     </div>
-
-    <section class="info-section">
-      <h2>Qibla yo'nalishini qanday topish mumkin?</h2>
-      <div class="info-grid">
-        <div class="info-card">
-          <div class="info-icon">📍</div>
-          <h3>1. Joylashuvga ruxsat bering</h3>
-          <p>"Qiblani Topish" tugmasini bosing va brauzeringizga joylashuvga ruxsat bering.</p>
-        </div>
-        <div class="info-card">
-          <div class="info-icon">🧭</div>
-          <h3>2. Kompasni kalibrlang</h3>
-          <p>Telefoningizni tekis tutib, sakkizlik harakat bilan bir necha marta aylantiring.</p>
-        </div>
-        <div class="info-card">
-          <div class="info-icon">🕋</div>
-          <h3>3. Ka'ba tomon yuzlaning</h3>
-          <p>Ka'ba belgisi ko'rsatgan tomonga yuzlaning — bu Qibla yo'nalishi.</p>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <p>&copy; 2026 Masjidgacha. Barcha huquqlar himoyalangan.</p>
-    <div class="footer-links">
-      <a href="#">Maxfiylik siyosati</a>
-      <a href="#">Foydalanish shartlari</a>
-      <a href="#">Biz haqimizda</a>
+    <div class="degree-display">
+      <span class="degree-val" id="degreeVal">--°</span>
+      <span class="degree-label">Qibla yo'nalishi</span>
     </div>
-  </footer>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="script.js"></script>
+  <div class="info-cards">
+    <div class="card" id="cardDir">
+      <div class="card-icon">🧭</div>
+      <div class="card-content">
+        <span class="card-label">Yo'nalish</span>
+        <span class="card-val" id="dirVal">—</span>
+      </div>
+    </div>
+    <div class="card" id="cardDist">
+      <div class="card-icon">📏</div>
+      <div class="card-content">
+        <span class="card-label">Ka'bagacha</span>
+        <span class="card-val" id="distVal">—</span>
+      </div>
+    </div>
+    <div class="card" id="cardCoords">
+      <div class="card-icon">📍</div>
+      <div class="card-content">
+        <span class="card-label">Koordinata</span>
+        <span class="card-val" id="coordsVal">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <div class="status-icon" id="statusIcon">⏳</div>
+    <span id="statusText">Joylashuvni aniqlash uchun tugmani bosing</span>
+  </div>
+
+  <button class="find-btn" id="findBtn" onclick="startFinding()">
+    <span class="btn-inner">
+      <span class="btn-icon">📡</span>
+      <span id="btnLabel">Joylashuvni Aniqlash</span>
+    </span>
+  </button>
+
+  <div class="manual-section">
+    <div class="divider"><span>yoki qo'lda kiriting</span></div>
+    <div class="manual-inputs">
+      <input type="text" id="cityInput" placeholder="Shahar nomi (Toshkent, Dubai...)" class="city-input"/>
+      <button class="search-btn" onclick="searchCity()">Qidirish</button>
+    </div>
+  </div>
+
+  <div class="accuracy-ring" id="accuracyRing"></div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+var KAABA = { lat: 21.4225, lng: 39.8262 };
+var currentQibla = 0;
+var compassHeading = 0;
+var deviceOrientationActive = false;
+
+// ── Math ───────────────────────────────────────────────────────────────────────
+function toRad(d) { return d * Math.PI / 180; }
+function toDeg(r) { return r * 180 / Math.PI; }
+
+function calcQibla(lat, lng) {
+  var lat1 = toRad(lat), lng1 = toRad(lng);
+  var lat2 = toRad(KAABA.lat), lng2 = toRad(KAABA.lng);
+  var dLng = lng2 - lng1;
+  var y = Math.sin(dLng);
+  var x = Math.cos(lat1) * Math.tan(lat2) - Math.sin(lat1) * Math.cos(dLng);
+  return (((toDeg(Math.atan2(y, x))) % 360) + 360) % 360;
+}
+
+function calcDistance(lat, lng) {
+  var R = 6371;
+  var dLat = toRad(KAABA.lat - lat);
+  var dLng = toRad(KAABA.lng - lng);
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+          Math.cos(toRad(lat))*Math.cos(toRad(KAABA.lat))*
+          Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function cardinalDir(q) {
+  var d = ["Shimol","Shimoli-sharq","Sharq","Janubi-sharq","Janub","Janubi-g'arb","G'arb","Shimoli-g'arb"];
+  return d[Math.round(q / 45) % 8];
+}
+
+// ── Draw tick marks ────────────────────────────────────────────────────────────
+(function() {
+  var container = document.getElementById('tickMarks');
+  var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 280 280');
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border-radius:50%;';
+  var cx = 140, cy = 140, outerR = 136;
+  for (var i = 0; i < 72; i++) {
+    var angle = i * 5;
+    var rad = toRad(angle - 90);
+    var isMajor = angle % 45 === 0;
+    var isMed = angle % 15 === 0;
+    var innerR = isMajor ? outerR - 14 : isMed ? outerR - 8 : outerR - 4;
+    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', cx + outerR * Math.cos(rad));
+    line.setAttribute('y1', cy + outerR * Math.sin(rad));
+    line.setAttribute('x2', cx + innerR * Math.cos(rad));
+    line.setAttribute('y2', cy + innerR * Math.sin(rad));
+    line.setAttribute('stroke', isMajor ? 'rgba(201,168,76,0.55)' : isMed ? 'rgba(201,168,76,0.28)' : 'rgba(255,255,255,0.07)');
+    line.setAttribute('stroke-width', isMajor ? '1.5' : '0.8');
+    svg.appendChild(line);
+  }
+  container.appendChild(svg);
+})();
+
+// ── Update display ─────────────────────────────────────────────────────────────
+function updateDisplay(qibla, heading) {
+  document.getElementById('needleWrap').style.transform = 'rotate(' + (-heading) + 'deg)';
+  document.getElementById('qiblaArrowWrap').style.transform = 'rotate(' + (qibla - heading) + 'deg)';
+  document.getElementById('degreeVal').textContent = Math.round(qibla) + '°';
+  document.getElementById('dirVal').textContent = cardinalDir(qibla);
+  document.getElementById('cardDir').classList.add('active');
+}
+
+// ── Apply location ─────────────────────────────────────────────────────────────
+function applyLocation(lat, lng, label) {
+  currentQibla = calcQibla(lat, lng);
+  var dist = calcDistance(lat, lng);
+  updateDisplay(currentQibla, compassHeading);
+  document.getElementById('distVal').textContent = Math.round(dist).toLocaleString() + ' km';
+  document.getElementById('coordsVal').textContent = lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°';
+  document.getElementById('cardDist').classList.add('active');
+  document.getElementById('cardCoords').classList.add('active');
+  setStatus('success', '✅', label + ' · Qibla ' + Math.round(currentQibla) + '°');
+  document.getElementById('accuracyRing').style.display = 'block';
+  document.getElementById('outerRing').classList.add('active');
+  startDeviceOrientation();
+}
+
+// ── Status ─────────────────────────────────────────────────────────────────────
+function setStatus(type, icon, msg) {
+  var bar = document.getElementById('statusBar');
+  bar.className = 'status-bar ' + type;
+  document.getElementById('statusIcon').textContent = icon;
+  document.getElementById('statusText').textContent = msg;
+}
+
+// ── GPS ────────────────────────────────────────────────────────────────────────
+function startFinding() {
+  if (!navigator.geolocation) {
+    setStatus('error','❌',"Brauzeringiz GPS ni qo'llab-quvvatlamaydi");
+    return;
+  }
+  setStatus('loading','📡','GPS signal qidirilmoqda...');
+  document.getElementById('findBtn').disabled = true;
+  document.getElementById('btnLabel').textContent = 'Aniqlanmoqda...';
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      document.getElementById('findBtn').disabled = false;
+      document.getElementById('btnLabel').textContent = 'Joylashuvni Aniqlash';
+      applyLocation(pos.coords.latitude, pos.coords.longitude, 'GPS joylashuv');
+    },
+    function(err) {
+      document.getElementById('findBtn').disabled = false;
+      document.getElementById('btnLabel').textContent = 'Joylashuvni Aniqlash';
+      var msgs = {
+        1: "GPS ruxsati berilmadi. Brauzer sozlamalarini tekshiring.",
+        2: "GPS signal topilmadi. Tashqariga chiqib ko'ring.",
+        3: "So'rov muddati o'tdi. Qayta urinib ko'ring."
+      };
+      setStatus('error','❌', msgs[err.code] || 'GPS xatosi yuz berdi');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+}
+
+// ── City search ────────────────────────────────────────────────────────────────
+function searchCity() {
+  var city = document.getElementById('cityInput').value.trim();
+  if (!city) return;
+  setStatus('loading','🔍','"' + city + '" qidirilmoqda...');
+  fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1', {
+    headers: { 'Accept-Language': 'uz,ru,en' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if (!data || !data.length) {
+      setStatus('error','❌','"' + city + '" topilmadi. Boshqa nom kiriting.');
+      return;
+    }
+    var res = data[0];
+    var name = res.display_name.split(',').slice(0,2).join(',').trim();
+    applyLocation(parseFloat(res.lat), parseFloat(res.lon), name);
+  })
+  .catch(function(){
+    setStatus('error','❌',"Internet aloqasini tekshiring.");
+  });
+}
+
+// ── Device Orientation (real compass on phone) ─────────────────────────────────
+function startDeviceOrientation() {
+  if (deviceOrientationActive) return;
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(function(state){
+        if (state === 'granted') { listenOrientation(); deviceOrientationActive = true; }
+      }).catch(function(){});
+  } else if (window.DeviceOrientationEvent) {
+    listenOrientation();
+    deviceOrientationActive = true;
+  }
+}
+
+function listenOrientation() {
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+
+function handleOrientation(e) {
+  var h = 0;
+  if (e.webkitCompassHeading !== undefined) {
+    h = e.webkitCompassHeading;
+  } else if (e.alpha !== null) {
+    h = 360 - e.alpha;
+  }
+  compassHeading = h;
+  updateDisplay(currentQibla, compassHeading);
+}
+
+// ── Enter key ──────────────────────────────────────────────────────────────────
+document.getElementById('cityInput').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') searchCity();
+});
+
+// ── Auto GPS if already permitted ─────────────────────────────────────────────
+if (navigator.permissions) {
+  navigator.permissions.query({ name: 'geolocation' }).then(function(r){
+    if (r.state === 'granted') startFinding();
+  }).catch(function(){});
+}
+</script>
 </body>
 </html>
