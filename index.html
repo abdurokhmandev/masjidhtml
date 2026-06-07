@@ -32,14 +32,14 @@ body{min-height:100vh;display:flex;justify-content:center;align-items:flex-start
 
 .compass-section{display:flex;flex-direction:column;align-items:center;gap:20px}
 
-/* Tashqi halqa silliq aylanishi uchun transition berildi */
+/* Siferblat (N harfi bor joy) qotib turadi, transition faqat soyaga tegishli */
 .compass-outer-ring{
   position:relative;width:280px;height:280px;border-radius:50%;
   background:conic-gradient(from 0deg,rgba(201,168,76,0.08) 0deg,rgba(26,107,60,0.06) 90deg,rgba(201,168,76,0.08) 180deg,rgba(26,107,60,0.06) 270deg,rgba(201,168,76,0.08) 360deg);
   border:1.5px solid rgba(201,168,76,0.25);
   box-shadow:0 0 40px rgba(201,168,76,0.08),inset 0 0 30px rgba(0,0,0,0.4);
   display:flex;align-items:center;justify-content:center;
-  transition:box-shadow 0.5s ease, transform 0.2s cubic-bezier(0.1, 0.8, 0.3, 1);
+  transition:box-shadow 0.5s ease;
 }
 .compass-outer-ring.active{box-shadow:0 0 60px rgba(201,168,76,0.18),inset 0 0 30px rgba(0,0,0,0.4)}
 
@@ -59,18 +59,19 @@ body{min-height:100vh;display:flex;justify-content:center;align-items:flex-start
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 
+/* Millarning silliq aylanishi uchun transitionlar qo'shildi */
 .compass-needle-wrap{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transition:transform 0.3s cubic-bezier(0.1, 0.8, 0.3, 1);
 }
 .needle-container{position:relative;width:8px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .needle{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent}
 .needle.north{border-bottom:70px solid #e05555;filter:drop-shadow(0 0 6px rgba(224,85,85,0.6));margin-bottom: 2px;}
 .needle.south{border-top:70px solid #cccccc;opacity:0.6;margin-top: 2px;}
 
-/* Qibla strelkasi joylashuvi silliq aylanish mantiqida */
 .qibla-arrow-wrap{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  transition:transform 0.4s cubic-bezier(0.1, 0.8, 0.3, 1);
+  transition:transform 0.3s cubic-bezier(0.1, 0.8, 0.3, 1);
 }
 .qibla-arrow{position:relative;width:6px;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:15px}
 .arrow-shaft{width:3px;height:55px;background:linear-gradient(to bottom,var(--gold-light),var(--gold));border-radius:2px;box-shadow:0 0 8px rgba(201,168,76,0.7)}
@@ -280,16 +281,16 @@ function cardinalDir(q) {
   container.appendChild(svg);
 })();
 
-// ── Update display (Tuzatilgan mantiq) ──────────────────────────────────────────
+// ── Update display (Siz xohlagan klassik mantiq) ───────────────────────────────
 function updateDisplay(qibla, heading) {
-  // Tashqi halqani (N, S, E, W) telefon qayerga burilsa ham haqiqiy Shimol tomonga qaratib buramiz
-  document.getElementById('outerRing').style.transform = 'rotate(' + (-heading) + 'deg)';
+  // 1. Tashqi halqa (N, S, E, W) mutlaqo qimirlamaydi, 0 darajada qotib turadi!
+  document.getElementById('outerRing').style.transform = 'rotate(0deg)';
   
-  // Qizil mil har doim N (Shimol) harfi bilan birga harakat qilishi uchun uni 0 darajada ushlaymiz
-  document.getElementById('needleWrap').style.transform = 'rotate(0deg)';
+  // 2. Qizil mil telefon qayerga burilsa ham haqiqiy shimolni ko'rsatib aylanadi
+  document.getElementById('needleWrap').style.transform = 'rotate(' + (-heading) + 'deg)';
   
-  // Ka'ba strelkasini esa siferblatdagi Shimolga nisbatan Qibla darajasiga burib qo'yamiz
-  document.getElementById('qiblaArrowWrap').style.transform = 'rotate(' + qibla + 'deg)';
+  // 3. Ka'ba esa o'sha Shimolga bog'langan holda u bilan birga aylanadi
+  document.getElementById('qiblaArrowWrap').style.transform = 'rotate(' + (qibla - heading) + 'deg)';
   
   document.getElementById('degreeVal').textContent = Math.round(qibla) + '°';
   document.getElementById('dirVal').textContent = cardinalDir(qibla);
@@ -385,9 +386,13 @@ function startDeviceOrientation() {
   }
 }
 
+// Hodisalarni to'g'ri bog'lash va iOS/Android mosligi
 function listenOrientation() {
-  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-  window.addEventListener('deviceorientation', handleOrientation, true);
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  } else {
+    window.addEventListener('deviceorientation', handleOrientation, true);
+  }
 }
 
 function handleOrientation(e) {
